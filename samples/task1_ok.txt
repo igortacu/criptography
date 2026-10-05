@@ -1,0 +1,25 @@
+=== Caesar cipher - Romanian alphabet (n = 31) ===
+1. Caesar cipher (one key)
+2. Caesar cipher with a keyword permutation (two keys)
+0. Exit
+Choice: 1
+Operation - (e)ncrypt or (d)ecrypt: e
+Key 1 (shift, 1-30): 3
+Enter the plaintext: cifrul cezar
+Normalized input : CIFRULCEZAR
+Ciphertext       : FKITXOFHÂBT
+=== Caesar cipher - Romanian alphabet (n = 31) ===
+1. Caesar cipher (one key)
+2. Caesar cipher with a keyword permutation (two keys)
+0. Exit
+Choice: 1
+Operation - (e)ncrypt or (d)ecrypt: d
+Key 1 (shift, 1-30): 3
+Enter the ciphertext: FKITXOFHÂBT
+Normalized input : FKITXOFHÂBT
+Plaintext        : CIFRULCEZAR
+=== Caesar cipher - Romanian alphabet (n = 31) ===
+1. Caesar cipher (one key)
+2. Caesar cipher with a keyword permutation (two keys)
+0. Exit
+Choice: 0

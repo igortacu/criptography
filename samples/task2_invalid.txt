@@ -1,0 +1,23 @@
+=== Caesar cipher - Romanian alphabet (n = 31) ===
+1. Caesar cipher (one key)
+2. Caesar cipher with a keyword permutation (two keys)
+0. Exit
+Choice: 2
+Operation - (e)ncrypt or (d)ecrypt: e
+Key 1 (shift, 1-30): 3
+Key 2 (keyword, min 7 letters): cripto
+  [!] Keyword too short (6 letters). It needs at least 7.
+Key 2 (keyword, min 7 letters): cripto grafie
+  [!] Invalid keyword. It must be a single word without spaces.
+Key 2 (keyword, min 7 letters): cripto9rafie
+  [!] Invalid character '9'. Allowed: letters of the Romanian alphabet (A-Z, Ă, Â, Î, Ș, Ț) and spaces.
+Key 2 (keyword, min 7 letters): criptografie
+Enter the plaintext: ab
+Permuted alphabet: C R I P T O G A F E Ă Â B D H Î J K L M N Q S Ș Ț U V W X Y Z
+Normalized input : AB
+Ciphertext       : ĂÎ
+=== Caesar cipher - Romanian alphabet (n = 31) ===
+1. Caesar cipher (one key)
+2. Caesar cipher with a keyword permutation (two keys)
+0. Exit
+Choice: 0

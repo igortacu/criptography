@@ -1,0 +1,349 @@
+\documentclass[12pt,a4paper]{article}
+
+% ----------- Encoding / language -----------
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage[english]{babel}
+
+% ----------- Math / layout -----------
+\usepackage{amsmath,amssymb}
+\usepackage{geometry}
+\usepackage{setspace}
+\usepackage{lmodern}
+
+% ----------- Figures / floats -----------
+\usepackage{graphicx}
+\usepackage{float}
+\usepackage{caption}
+\usepackage{fancyhdr}
+
+% ----------- Code listings -----------
+\usepackage{listings}
+\usepackage{xcolor}
+\usepackage{booktabs}
+\usepackage{array}
+
+\geometry{top=2cm,bottom=2cm,left=2.5cm,right=2.5cm}
+\setstretch{1.3}
+\pagestyle{fancy}
+\fancyhf{}
+\rfoot{\thepage}
+\captionsetup[figure]{position=bottom,justification=centering}
+
+\definecolor{codegray}{rgb}{0.95,0.95,0.95}
+\definecolor{commentcolor}{rgb}{0.4,0.4,0.4}
+\definecolor{keywordcolor}{rgb}{0.1,0.1,0.6}
+\definecolor{stringcolor}{rgb}{0.2,0.5,0.2}
+
+% Romanian letters inside listings (pdfLaTeX reads UTF-8 bytes, so map them explicitly)
+\lstset{
+  literate=
+    {Ă}{{\u{A}}}1 {Â}{{\^A}}1 {Î}{{\^I}}1 {Ș}{{\c{S}}}1 {Ț}{{\c{T}}}1
+    {ă}{{\u{a}}}1 {â}{{\^a}}1 {î}{{\^\i}}1 {ș}{{\c{s}}}1 {ț}{{\c{t}}}1
+    {Ş}{{\c{S}}}1 {ş}{{\c{s}}}1 {Ţ}{{\c{T}}}1 {ţ}{{\c{t}}}1,
+  language=Python,
+  basicstyle=\ttfamily\small,
+  backgroundcolor=\color{codegray},
+  commentstyle=\color{commentcolor}\itshape,
+  keywordstyle=\color{keywordcolor}\bfseries,
+  stringstyle=\color{stringcolor},
+  numbers=left,
+  numberstyle=\tiny\color{gray},
+  numbersep=8pt,
+  frame=single,
+  rulecolor=\color{black!30},
+  showstringspaces=false,
+  tabsize=4,
+  breaklines=true,
+  captionpos=b
+}
+
+\newcommand{\code}[1]{\texttt{\small #1}}
+
+\begin{document}
+
+% ===================== TITLE PAGE =====================
+\begin{titlepage}
+\begin{center}
+  \textbf{MINISTRY OF EDUCATION AND RESEARCH}\\
+  \textbf{OF THE REPUBLIC OF MOLDOVA}\\[0.5em]
+  \textbf{TECHNICAL UNIVERSITY OF MOLDOVA}\\
+  \textbf{Faculty of Computers, Informatics and Microelectronics}\\
+  \textbf{Department of Software Engineering and Automatics}\\[2em]
+
+  \vspace{1.5cm}
+  \textbf{\Large Tacu Igor \textemdash{} FAF-242}\\[3em]
+
+  \textbf{\Large REPORT}\\[0.5em]
+  Laboratory Work No.\ 1\\[0.5em]
+  \textbf{Cryptography}\\[0.5em]
+  \textbf{The Caesar Cipher and the Caesar Cipher with a Permutation}\\[3em]
+
+  \vfill
+  \begin{flushright}
+    Lecturer:\\
+    Maia Zaica\\
+    DISA, FCIM, UTM
+  \end{flushright}
+  \vfill
+
+  \large \textbf{Chi\c{s}in\u{a}u \textemdash{} 2026}
+\end{center}
+\end{titlepage}
+
+\tableofcontents
+\newpage
+
+% ===================== 1. THEORY =====================
+\section{Short Theory}
+
+\subsection{The Caesar cipher}
+
+The Caesar cipher replaces every letter of the plaintext by the letter found $k$
+positions further in the alphabet, wrapping around at the end. With an alphabet of
+$n$ letters whose positions are numbered from $0$, the secret key is
+$k \in \{1,2,\dots,n-1\}$ and the same $k$ is used for both operations:
+\begin{align*}
+  c &= e_k(x) = (x + k) \bmod n, \\
+  m &= d_k(y) = (y - k) \bmod n.
+\end{align*}
+When $y-k$ is negative, $n$ must be added to bring the result back into the range
+$0\dots n-1$, e.g.\ $(1-3) \bmod 26 = 24$. For the Romanian alphabet of this work
+$n = 31$, so $k \in \{1,\dots,30\}$.
+
+\textbf{Key space:} only $n-1 = 30$ keys. The cipher is broken by an
+\emph{exhaustive search}: the attacker decrypts with every key and keeps the one
+that yields readable text.
+
+\subsection{The Caesar cipher with a permutation}
+
+To enlarge the key space, the alphabet is first permuted using a \emph{keyword}
+$k_2$: the distinct letters of $k_2$ are written first (only the first occurrence of
+each is kept), followed by the remaining letters of the alphabet in their natural
+order. The Caesar shift $k_1$ is then applied to the \emph{positions in the permuted
+alphabet}. For $k_2 = \textit{cryptography}$ and the English alphabet the order becomes
+\texttt{CRYPTOGAHBDEFIJKLMNQSUVWXZ}, so with $k_1 = 3$ the text \texttt{CIFRULCEZAR}
+is encrypted as \texttt{PLKTXQPJYDT} (instead of \texttt{FLIUXOFHCDU} with the plain
+cipher). Encryption and decryption keep the same formulas, but $x$ and $y$ are now
+positions in the permuted alphabet.
+
+\textbf{Key space:} there are $n!$ orderings and $n-1$ shifts. For $n = 31$:
+\[
+  31! \times 30 \approx 8.22\cdot 10^{33} \times 30 \approx 2.47\cdot 10^{35}
+  \quad (\approx 2^{117.6}),
+\]
+which makes exhaustive search infeasible. However, a keyword always yields a
+\emph{fixed} substitution, so letter frequencies of the language remain visible in
+the ciphertext and the cipher is still vulnerable to \emph{frequency analysis}. The
+number of distinct encryptions cannot exceed $n!$, because different key pairs can
+produce the same substitution.
+
+% ===================== 2. IMPLEMENTATION =====================
+\section{Implementation}
+
+The program is written in Python 3 (no external libraries) and consists of
+\code{caesar.py} (cipher + console interface) and \code{test\_caesar.py} (unit
+tests). The alphabet is a parameter of every function, which allowed me to verify the
+code against the English examples from the assignment.
+
+\subsection{Letter encoding}
+
+\begin{lstlisting}
+ROMANIAN = ["A", "Ă", "Â", "B", "C", "D", "E", "F", "G", "H", "I", "Î", "J", "K", "L",
+            "M", "N", "O", "P", "Q", "R", "S", "Ș", "T", "Ț", "U", "V", "W", "X", "Y", "Z"]
+CEDILLA = {"Ş": "Ș", "ş": "ș", "Ţ": "Ț", "ţ": "ț"}
+\end{lstlisting}
+The code of a letter is simply its index in this list, which reproduces Table~2 of
+the assignment ($\text{A}=0$, $\text{\u{A}}=1$, \dots, $\text{Z}=30$). Built-in
+character codes (\code{ord}, \code{chr}, ASCII/Unicode) are \emph{never} used to
+compute the shift. \code{CEDILLA} maps the cedilla letters \c{S}, \c{T} to the
+comma-below letters so that text typed on different keyboards is accepted.
+
+\subsection{Input validation}
+
+\begin{lstlisting}
+def normalize(text, alphabet=ROMANIAN):
+    out = ""
+    for ch in text.replace(" ", ""):
+        ch = CEDILLA.get(ch, ch).upper()
+        if ch not in alphabet:
+            raise InvalidInput(f"Invalid character '{ch}'. Allowed: ...")
+        out += ch
+    return out
+
+def validate_shift(raw, n=len(ROMANIAN)):
+    try:
+        k = int(raw)
+    except ValueError:
+        k = None
+    if k is None or not 1 <= k < n:
+        raise InvalidInput(f"Invalid key '{raw.strip()}'. The key must be an "
+                           f"integer between 1 and {n - 1} inclusive.")
+    return k
+\end{lstlisting}
+\code{normalize} removes spaces, unifies cedilla variants, converts to uppercase
+(requirement~6) and rejects the first character that is not in the alphabet,
+naming it in the message. \code{validate\_shift} accepts only integers in
+$1\dots30$. \code{validate\_keyword} (not shown) applies \code{normalize} to the
+keyword and additionally rejects keywords with spaces or shorter than $7$ letters.
+All validators raise \code{InvalidInput}; the function \code{ask} catches it, prints
+the message and asks for the value again:
+\begin{lstlisting}
+def ask(prompt, validate):
+    while True:
+        try:
+            return validate(input(prompt))
+        except InvalidInput as err:
+            print(f"  [!] {err}")
+\end{lstlisting}
+
+\subsection{Encryption and decryption (Task 1.1)}
+
+\begin{lstlisting}
+def shift(text, k, alphabet):
+    n = len(alphabet)
+    pos = {ch: i for i, ch in enumerate(alphabet)}
+    return "".join(alphabet[(pos[ch] + k) % n] for ch in text)
+
+def encrypt(text, k, alphabet=ROMANIAN):   # c = (x + k) mod n
+    return shift(text, k, alphabet)
+
+def decrypt(text, k, alphabet=ROMANIAN):   # m = (y - k) mod n
+    return shift(text, -k, alphabet)
+\end{lstlisting}
+\code{pos} maps each letter to its position and \code{shift} applies the formulas of
+Section~1; decryption is the same operation with $-k$. Python's \code{\%} always returns a
+value in $0\dots n-1$, so a negative $y-k$ is wrapped around correctly (e.g.\ $(1-3) \bmod 31 = 29$).
+
+\subsection{Permuted alphabet and two keys (Task 1.2)}
+
+\begin{lstlisting}
+def permuted_alphabet(keyword, alphabet=ROMANIAN):
+    # dict keeps insertion order: repeats dropped, first occurrence kept
+    return list(dict.fromkeys(keyword + "".join(alphabet)))
+
+def encrypt2(text, k, keyword, alphabet=ROMANIAN):
+    return encrypt(text, k, permuted_alphabet(keyword, alphabet))
+\end{lstlisting}
+Putting the keyword in front of the whole alphabet and removing repeated letters, produces exactly the construction from the assignment (first
+occurrence of each keyword letter, then the remaining letters in natural order).
+The resulting order simply replaces the alphabet in \code{encrypt}/\code{decrypt},
+so the second task reuses the code of the first. The program prints the permuted
+alphabet before every operation so that the result can be checked by hand.
+
+\subsection{Verification}
+
+\code{test\_caesar.py} checks the code against all worked examples of the assignment
+(using the English alphabet): $\texttt{CIFRULCEZAR}\to\texttt{FLIUXOFHCDU}$
+($k=3$), $\texttt{BRUTEFORCEATTACK}\to\texttt{SILKVWFITVRKKRTB}$ ($k=17$) together
+with the brute-force candidate for $k=1$, the permuted alphabet for
+\textit{cryptography}, and $\texttt{CIFRULCEZAR}\to\texttt{PLKTXQPJYDT}$ with
+$k_1=3$, $k_2=\textit{cryptography}$. For the Romanian alphabet it checks the size
+(31) and codes, the wrap-around cases, round trips for all $30$ keys, and the
+rejected inputs. All 9 tests pass (\code{python3 -m unittest}).
+
+% ===================== 3. RESULTS =====================
+\section{Results}
+
+The listings below are the real output of the program (the text typed by the user
+is shown after each prompt).
+
+\subsection{Task 1.1 -- Caesar cipher}
+
+\begin{lstlisting}[language={},numbers=none,basicstyle=\ttfamily\footnotesize,caption={Encryption and decryption with $k=3$.}]
+Choice: 1
+Operation - (e)ncrypt or (d)ecrypt: e
+Key 1 (shift, 1-30): 3
+Enter the plaintext: cifrul cezar
+Normalized input : CIFRULCEZAR
+Ciphertext       : FKITXOFHÂBT
+
+Choice: 1
+Operation - (e)ncrypt or (d)ecrypt: d
+Key 1 (shift, 1-30): 3
+Enter the ciphertext: FKITXOFHÂBT
+Normalized input : FKITXOFHÂBT
+Plaintext        : CIFRULCEZAR
+\end{lstlisting}
+The result differs from \texttt{FLIUXOFHCDU} of the English example because the
+Romanian alphabet has $31$ letters including \u{A}, \^A, \^I, \c{S}, \c{T}: for
+example $\text{C}=4 \to 7=\text{F}$ and $\text{I}=10\to 13=\text{K}$.
+
+\begin{lstlisting}[language={},numbers=none,basicstyle=\ttfamily\footnotesize,caption={Task 1.1 -- invalid key and invalid character.}]
+Key 1 (shift, 1-30): 0
+  [!] Invalid key '0'. The key must be an integer between 1 and 30 inclusive.
+Key 1 (shift, 1-30): 31
+  [!] Invalid key '31'. The key must be an integer between 1 and 30 inclusive.
+Key 1 (shift, 1-30): abc
+  [!] Invalid key 'abc'. The key must be an integer between 1 and 30 inclusive.
+Key 1 (shift, 1-30): 5
+Enter the plaintext: hello, world
+  [!] Invalid character ','. Allowed: letters of the Romanian alphabet (A-Z, Ă, Â, Î, Ș, Ț) and spaces.
+Enter the plaintext: Ştiinţă şi artă
+Normalized input : ȘTIINȚĂȘIARTĂ
+Ciphertext       : WXMMSYEWMDUXE
+\end{lstlisting}
+The last line shows the cedilla letters being accepted as \c{S} and \c{T}.
+
+\subsection{Task 1.2 -- Caesar cipher with two keys}
+
+\begin{lstlisting}[language={},numbers=none,basicstyle=\ttfamily\footnotesize,caption={Encryption and decryption with $k_1=3$, $k_2=\textit{criptografie}$.}]
+Choice: 2
+Operation - (e)ncrypt or (d)ecrypt: e
+Key 1 (shift, 1-30): 3
+Key 2 (keyword, min 7 letters): criptografie
+Enter the plaintext: Cifrul Cezar
+Permuted alphabet: C R I P T O G A F E Ă Â B D H Î J K L M N Q S Ș Ț U V W X Y Z
+Normalized input : CIFRULCEZAR
+Ciphertext       : POÂTXQPBIĂT
+
+Choice: 2
+Operation - (e)ncrypt or (d)ecrypt: d
+Key 1 (shift, 1-30): 3
+Key 2 (keyword, min 7 letters): criptografie
+Enter the ciphertext: POÂTXQPBIĂT
+Permuted alphabet: C R I P T O G A F E Ă Â B D H Î J K L M N Q S Ș Ț U V W X Y Z
+Normalized input : POÂTXQPBIĂT
+Plaintext        : CIFRULCEZAR
+\end{lstlisting}
+Check by hand: C has position $0$ in the permuted alphabet, so it becomes the letter
+at position $3$, which is P; I (position $2$) becomes the letter at position $5$, O.
+
+\begin{lstlisting}[language={},numbers=none,basicstyle=\ttfamily\footnotesize,caption={Task 1.2 -- invalid keywords.}]
+Key 2 (keyword, min 7 letters): cripto
+  [!] Keyword too short (6 letters). It needs at least 7.
+Key 2 (keyword, min 7 letters): cripto grafie
+  [!] Invalid keyword. It must be a single word without spaces.
+Key 2 (keyword, min 7 letters): cripto9rafie
+  [!] Invalid character '9'. Allowed: letters of the Romanian alphabet (A-Z, Ă, Â, Î, Ș, Ț) and spaces.
+Key 2 (keyword, min 7 letters): criptografie
+\end{lstlisting}
+
+% ===================== 4. CONCLUSIONS =====================
+\section{Conclusions}
+
+The plain Caesar cipher has only $n-1 = 30$ keys for the Romanian alphabet, so an
+exhaustive search finds the plaintext immediately; it offers no real protection.
+Using a keyword to permute the alphabet raises the number of keys to about
+$31!\cdot 30 \approx 2.5\cdot10^{35}$ and makes brute force infeasible, but the
+cipher remains a monoalphabetic substitution: every plaintext letter is always
+replaced by the same ciphertext letter, so a frequency analysis of a sufficiently
+long ciphertext still reveals the substitution. A large key space is therefore
+necessary but not sufficient for security.
+
+During the work I learned to implement modular arithmetic with explicit handling
+of negative values, to build the permuted alphabet from a keyword, and to
+validate user input with clear error messages. Two practical details mattered: the
+Romanian alphabet must be encoded from the given table (not from Unicode code
+points, which are not contiguous for \u{A}, \^A, \^I, \c{S}, \c{T}), and the
+cedilla/comma-below variants of \c{S} and \c{T} must be unified. Testing the
+alphabet-independent functions against the English examples of the assignment gave
+confidence that the Romanian version is correct.
+
+% ===================== 5. SOURCE CODE =====================
+\section{Source Code}
+
+The full source code is available in the GitHub repository:\\
+\texttt{https://github.com/igortacu/criptography}
+
+\end{document}

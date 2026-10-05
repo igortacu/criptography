@@ -1,0 +1,23 @@
+=== Caesar cipher - Romanian alphabet (n = 31) ===
+1. Caesar cipher (one key)
+2. Caesar cipher with a keyword permutation (two keys)
+0. Exit
+Choice: 1
+Operation - (e)ncrypt or (d)ecrypt: e
+Key 1 (shift, 1-30): 0
+  [!] Invalid key '0'. The key must be an integer between 1 and 30 inclusive.
+Key 1 (shift, 1-30): 31
+  [!] Invalid key '31'. The key must be an integer between 1 and 30 inclusive.
+Key 1 (shift, 1-30): abc
+  [!] Invalid key 'abc'. The key must be an integer between 1 and 30 inclusive.
+Key 1 (shift, 1-30): 5
+Enter the plaintext: hello, world
+  [!] Invalid character ','. Allowed: letters of the Romanian alphabet (A-Z, Ă, Â, Î, Ș, Ț) and spaces.
+Enter the plaintext: Ştiinţă şi artă
+Normalized input : ȘTIINȚĂȘIARTĂ
+Ciphertext       : WXMMSYEWMDUXE
+=== Caesar cipher - Romanian alphabet (n = 31) ===
+1. Caesar cipher (one key)
+2. Caesar cipher with a keyword permutation (two keys)
+0. Exit
+Choice: 0

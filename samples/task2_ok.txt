@@ -1,0 +1,29 @@
+=== Caesar cipher - Romanian alphabet (n = 31) ===
+1. Caesar cipher (one key)
+2. Caesar cipher with a keyword permutation (two keys)
+0. Exit
+Choice: 2
+Operation - (e)ncrypt or (d)ecrypt: e
+Key 1 (shift, 1-30): 3
+Key 2 (keyword, min 7 letters): criptografie
+Enter the plaintext: Cifrul Cezar
+Permuted alphabet: C R I P T O G A F E Ă Â B D H Î J K L M N Q S Ș Ț U V W X Y Z
+Normalized input : CIFRULCEZAR
+Ciphertext       : POÂTXQPBIĂT
+=== Caesar cipher - Romanian alphabet (n = 31) ===
+1. Caesar cipher (one key)
+2. Caesar cipher with a keyword permutation (two keys)
+0. Exit
+Choice: 2
+Operation - (e)ncrypt or (d)ecrypt: d
+Key 1 (shift, 1-30): 3
+Key 2 (keyword, min 7 letters): criptografie
+Enter the ciphertext: POÂTXQPBIĂT
+Permuted alphabet: C R I P T O G A F E Ă Â B D H Î J K L M N Q S Ș Ț U V W X Y Z
+Normalized input : POÂTXQPBIĂT
+Plaintext        : CIFRULCEZAR
+=== Caesar cipher - Romanian alphabet (n = 31) ===
+1. Caesar cipher (one key)
+2. Caesar cipher with a keyword permutation (two keys)
+0. Exit
+Choice: 0
