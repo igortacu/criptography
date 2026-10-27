@@ -1,0 +1,242 @@
+\documentclass[12pt,a4paper]{article}
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage[english]{babel}
+\usepackage{lmodern,geometry,setspace,amsmath,amssymb,booktabs,array,longtable}
+\usepackage{fancyhdr,listings,xcolor}
+\geometry{top=2cm,bottom=2cm,left=2.5cm,right=2.5cm}
+\setstretch{1.2}
+\pagestyle{fancy}\fancyhf{}\rfoot{\thepage}
+\definecolor{codebg}{RGB}{246,247,249}
+\lstset{language=Python,basicstyle=\ttfamily\footnotesize,backgroundcolor=\color{codebg},
+  frame=single,rulecolor=\color{gray!40},breaklines=true,showstringspaces=false,
+  columns=fullflexible,keepspaces=true,
+  literate={Ă}{{\u{A}}}1 {Â}{{\^A}}1 {Î}{{\^I}}1 {Ș}{{\c{S}}}1 {Ț}{{\c{T}}}1
+           {ă}{{\u{a}}}1 {â}{{\^a}}1 {î}{{\^\i}}1 {ș}{{\c{s}}}1 {ț}{{\c{t}}}1}
+\newcommand{\file}[1]{\texttt{#1}}
+\renewcommand{\contentsname}{Cuprins}
+
+\begin{document}
+\begin{titlepage}
+\begin{center}
+\textbf{MINISTERUL EDUCAȚIEI ȘI CERCETĂRII AL REPUBLICII MOLDOVA}\\[0.5em]
+\textbf{UNIVERSITATEA TEHNICĂ A MOLDOVEI}\\
+Facultatea Calculatoare, Informatică și Microelectronică\\
+Departamentul Ingineria Software și Automatică
+\vspace{3cm}
+
+{\Large\bfseries RAPORT}\\[0.7em]
+{\large Lucrare de laborator nr. 3}\\[0.5em]
+{\large Cifruri polialfabetice. Algoritmul Playfair}\\[0.7em]
+Disciplina: Criptografie\\
+Varianta 23 --- sarcina 3.1
+\vspace{2.5cm}
+
+\begin{flushright}
+Realizat de: Tacu Igor, FAF-242\\[0.5em]
+Lector: Maia Zaica
+\end{flushright}
+\vfill
+\textbf{Chișinău --- 2026}
+\end{center}
+\end{titlepage}
+
+\pagenumbering{roman}
+\tableofcontents
+\newpage
+\pagenumbering{arabic}
+
+\section{Sarcina și alegerea variantei}
+
+Numărul meu în registru este \textbf{23}. Conform notei de la sfârșitul îndrumarului,
+numerele impare rezolvă \textbf{sarcina 3.1}: implementarea cifrului Playfair pentru
+mesaje în limba română. Programul trebuie să primească operația, cheia și mesajul
+sau criptograma, apoi să afișeze rezultatul. Cheia are minimum șapte litere;
+caracterele nepermise sunt respinse cu o indicație despre intervalul admis.
+Spațiile din textul decriptat se restabilesc manual. Sarcina 3.2, despre Vigenère,
+revine numerelor pare și nu face parte din această variantă.
+
+\section{Modelul folosit}
+
+\subsection{Alfabetul și matricea}
+
+Am păstrat ordinea alfabetului românesc folosită în laboratorul 1:
+\begin{center}
+\small\texttt{A Ă Â B C D E F G H I Î J K L M N O P Q R S Ș T Ț U V W X Y Z}
+\end{center}
+Sunt 31 de litere. Enunțul menționează simultan 31 de litere românești și intervalul
+\texttt{A-Z/a-z}; ultimul, luat literal, ar conține numai 26 de litere. Pentru a putea
+introduce mesaje românești, programul acceptă și cele cinci litere cu diacritice,
+inclusiv variantele cu sedilă pentru Ș și Ț. Acceptă spații în mesajul clar,
+deoarece etapa de pregătire din îndrumar le elimină. Cheia și criptograma nu
+acceptă spații. Cifrele, punctuația, taburile și alte simboluri sunt respinse.
+
+O matrice dreptunghiulară completă cu 31 de poziții ar avea doar dimensiunile
+$1\times31$ sau $31\times1$. Acestea nu ar permite folosirea efectivă a regulii
+dreptunghiului. Îndrumarul admite explicit o matrice cu \emph{aproape toate}
+literele și restabilirea intuitivă a literelor eliminate. Am ales \textbf{5 rânduri
+și 6 coloane}: 30 de poziții. Litera \texttt{Q}, rară în cuvintele românești,
+este asimilată cu \texttt{K} înainte de cifrare. Este o pierdere de informație:
+după descifrare, un \texttt{K} provenit din \texttt{Q} poate fi recunoscut numai din
+context. Nu elimin diacriticele, pentru că ele sunt esențiale pentru un text
+românesc lizibil.
+
+\subsection{Pregătirea textului}
+
+Mai întâi transform literele în majuscule, elimin spațiile, normalizez formele
+Unicode echivalente și aplic \texttt{Q}$\to$\texttt{K}. Apoi formez perechi de câte
+două litere. Dacă următoarele două litere sunt identice, inserez \texttt{X} între
+ele; pentru perechea \texttt{XX} folosesc \texttt{Z}, ca să nu produc din nou o
+pereche egală. Aceeași regulă completează mesajele cu lungime impară. De exemplu:
+\[
+\texttt{ANA ARE MERE}\longrightarrow\texttt{AN AX AR EM ER EX}.
+\]
+Regula se aplică perechilor formate efectiv, nu oricăror două litere identice
+care devin vecine după eliminarea spațiilor. Literele de umplere nu se șterg
+automat la decriptare: un \texttt{X} sau \texttt{Z} poate aparține mesajului
+original, iar programul nu poate decide sigur acest lucru.
+
+\subsection{Construirea cheii și regulile Playfair}
+
+Cheia de demonstrație este \texttt{SECURITATE} (10 litere). Repetițiile se elimină
+după prima apariție: \texttt{SECURITA}. Adaug apoi, în ordinea de mai sus, toate
+literele alfabetului de 30 care încă lipsesc. Matricea rezultată este:
+
+\begin{center}
+\renewcommand{\arraystretch}{1.3}
+\begin{tabular}{cccccc}
+\toprule
+S&E&C&U&R&I\\
+T&A&Ă&Â&B&D\\
+F&G&H&Î&J&K\\
+L&M&N&O&P&Ș\\
+Ț&V&W&X&Y&Z\\
+\bottomrule
+\end{tabular}
+\end{center}
+
+Pentru o digramă, pozițiile sunt $(r_1,c_1)$ și $(r_2,c_2)$:
+\begin{itemize}
+\item același rând: ambele coloane avansează cu o poziție modulo 6;
+\item aceeași coloană: ambele rânduri avansează cu o poziție modulo 5;
+\item rânduri și coloane diferite: rezultatul este $(r_1,c_2)$, respectiv
+  $(r_2,c_1)$, adică celelalte colțuri ale dreptunghiului.
+\end{itemize}
+La decriptare, primele două deplasări merg în sens opus; regula dreptunghiului
+este aceeași. Exemple simple din matricea de mai sus: \texttt{SE}$\to$\texttt{EC}
+(rând), \texttt{ST}$\to$\texttt{TF} (coloană), \texttt{SA}$\to$\texttt{ET}
+(dreptunghi). Trecerea peste margine se vede în \texttt{IS}$\to$\texttt{SE}.
+
+\section{Implementare}
+
+Programul este în \file{lab3/playfair.py}, Python 3, fără pachete externe.
+Funcțiile sunt separate după responsabilitate: \file{clean} validează și
+normalizează intrarea; \file{key\_square} construiește matricea;
+\file{prepare} produce digramele; \file{transform} aplică regulile;
+\file{encrypt} și \file{decrypt} sunt operațiile folosite de interfața de consolă.
+
+Partea decisivă a transformării este scurtă și oglindește exact cele trei cazuri:
+\begin{lstlisting}
+if ra == rb:
+    output.extend((square[ra * COLS + (ca + direction) % COLS],
+                   square[rb * COLS + (cb + direction) % COLS]))
+elif ca == cb:
+    output.extend((square[((ra + direction) % ROWS) * COLS + ca],
+                   square[((rb + direction) % ROWS) * COLS + cb]))
+else:
+    output.extend((square[ra * COLS + cb], square[rb * COLS + ca]))
+\end{lstlisting}
+Valoarea \file{direction} este $+1$ la criptare și $-1$ la decriptare. Operatorul
+\file{\%} face rotația la capătul rândului sau al coloanei. Pozițiile literelor
+sunt construite o singură dată într-un dicționar, înainte de parcurgerea
+digramelor; astfel nu este necesară căutarea repetată în matrice.
+
+La criptare se validează cheia și mesajul, se afișează matricea și digramele
+pregătite, apoi criptograma. La decriptare se verifică în plus lungimea pară a
+criptogramei și absența perechilor identice, imposibile într-o criptogramă
+Playfair validă. Programul afișează textul pregătit rezultat și amintește că
+spațiile, eventualele umpleri și litera \texttt{Q} trebuie restabilite manual.
+
+\section{Exemplu complet de criptare și decriptare}
+
+Folosesc cheia \texttt{SECURITATE} și mesajul \texttt{ȘTIINȚĂ ȘI CERCETARE}.
+După normalizare și formarea digramelor obțin:
+\begin{center}
+\texttt{ȘT IX IN ȚĂ ȘI CE RC ET AR EX}
+\end{center}
+\texttt{X} a fost inserat între cele două litere \texttt{I} consecutive,
+iar ultimul \texttt{E} a fost completat cu \texttt{X}. Următorul tabel arată
+toate substituțiile, astfel încât rezultatul poate fi verificat manual:
+
+\begin{center}
+\begin{tabular}{ccccccccccc}
+\toprule
+Clar&ȘT&IX&IN&ȚĂ&ȘI&CE&RC&ET&AR&EX\\
+Cifrat&LD&UZ&CȘ&WT&ZD&UC&IU&SA&BE&UV\\
+\bottomrule
+\end{tabular}
+\end{center}
+
+Criptograma fără separatori este:
+\begin{center}
+\large\texttt{LDUZCȘWTZDUCIUSABEUV}
+\end{center}
+Decriptarea cu aceeași cheie dă \texttt{ȘTIXINȚĂȘICERCETAREX}. După eliminarea
+celor două litere de umplere și plasarea manuală a spațiilor, recuperez
+\texttt{ȘTIINȚĂ ȘI CERCETARE}. Exemplul arată de ce rezultatul brut al
+decriptării nu este întotdeauna identic cu forma inițială a mesajului.
+
+\section{Verificări și cazuri de eroare}
+
+Am rulat \file{python3 -m unittest -v test\_playfair.py}. Cele șapte teste acoperă
+matricea (30 de litere distincte), cele trei reguli și rotația la margini,
+pregătirea literelor duble, mesaje impare, diacriticele, validarea datelor și
+relația
+\[
+ D_k(E_k(m))=\operatorname{prepare}(m).
+\]
+Unul dintre teste verifică separat toate cele $30\cdot29=870$ de digrame cu
+litere diferite: cifrează fiecare digramă și confirmă că decriptarea o recuperează.
+Egalitatea este cu textul \emph{pregătit}, deoarece inserările și pierderea lui
+\texttt{Q} nu pot fi inversate automat. Am verificat această proprietate pentru
+mesaje cu diacritice, cu litere \texttt{X} repetate și cu \texttt{Q}.
+
+\begin{center}
+\begin{tabular}{p{0.36\textwidth}p{0.49\textwidth}}
+\toprule
+Intrare sau situație&Rezultat urmărit\\
+\midrule
+Cheia \texttt{SCURT}&Respinsă: are sub 7 litere.\\
+Mesajul \texttt{ABC!}&Respins: semnul \texttt{!} nu este permis; se afișează caracterele admise.\\
+Criptograma \texttt{ABC}&Respinsă: lungime impară.\\
+Criptograma \texttt{AA}&Respinsă: digramă cu litere identice.\\
+Textul \texttt{ştiinţă}&Normalizat la \texttt{ȘTIINȚĂ}.\\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\section{Limite și concluzii}
+
+Playfair ascunde frecvența literelor individuale mai bine decât un cifru de
+substituție monoalfabetic, deoarece criptează \emph{perechi} și o literă poate
+avea rezultate diferite în funcție de vecina sa. Totuși, perechile repetate
+dintr-un text lung lasă tipare, iar algoritmul este nepotrivit pentru protecția
+datelor actuale. Implementarea de aici are scop didactic.
+
+Varianta de 30 de poziții respectă recomandarea din îndrumar pentru un alfabet
+care nu încape într-o matrice potrivită, dar \texttt{Q}$\to$\texttt{K} înseamnă
+că descifrarea nu poate reconstitui automat toate mesajele. Același lucru se
+aplică spațiilor și literelor de umplere. Programul lasă aceste decizii la
+cititor, în acord cu cerința de restabilire manuală a formei finale.
+
+\section*{Fișiere și sursă}
+\addcontentsline{toc}{section}{Fișiere și sursă}
+\begin{itemize}
+\item \file{lab3/playfair.py} --- implementarea și interfața de consolă;
+\item \file{lab3/test\_playfair.py} --- verificările automate;
+\item \file{lab3/report.tex} --- sursa acestui raport.
+\end{itemize}
+Îndrumar: \emph{Lucrare de laborator nr. 3. Cifruri polialfabetice},
+secțiunea 3.2 și sarcina 3.1, paginile 3--7 (documentul furnizat pentru curs).
+
+\end{document}
