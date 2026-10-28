@@ -1,0 +1,902 @@
+\documentclass[12pt,a4paper]{article}
+
+% ----------- Encoding / language -----------
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage[english]{babel}
+
+% ----------- Math / layout -----------
+\usepackage{amsmath,amssymb}
+\usepackage{geometry}
+\usepackage{setspace}
+\usepackage{titlesec}
+
+% ----------- Figures / floats -----------
+\usepackage{graphicx}
+\usepackage{float}
+\usepackage{caption}
+
+% ----------- Header/footer -----------
+\usepackage{fancyhdr}
+
+% ----------- Lists -----------
+\usepackage{enumitem}
+
+% ----------- Fonts -----------
+\usepackage{newtxtext,newtxmath}
+
+% ----------- Code listings -----------
+\usepackage{listings}
+\usepackage{courier}
+\usepackage{xcolor}
+
+% ----------- Tables -----------
+\usepackage{booktabs}
+\usepackage{array}
+
+% =============== Page setup ===============
+\geometry{top=2cm,bottom=2cm,left=2.5cm,right=2.5cm}
+\setstretch{1.5}
+
+\titleformat{\section}{\normalfont\Large\bfseries}{\thesection}{1em}{}
+\titleformat{\subsection}{\normalfont\large\bfseries}{\thesubsection}{1em}{}
+
+\pagestyle{fancy}
+\fancyhf{}
+\rfoot{\thepage}
+
+\captionsetup[figure]{position=bottom,justification=centering}
+
+\definecolor{codegray}{rgb}{0.95,0.95,0.95}
+\definecolor{commentcolor}{rgb}{0.4,0.4,0.4}
+\definecolor{keywordcolor}{rgb}{0.1,0.1,0.6}
+\definecolor{stringcolor}{rgb}{0.2,0.5,0.2}
+
+\lstset{
+  language=[x86masm]Assembler,
+  basicstyle=\ttfamily\small,
+  backgroundcolor=\color{codegray},
+  commentstyle=\color{commentcolor}\itshape,
+  keywordstyle=\color{keywordcolor}\bfseries,
+  stringstyle=\color{stringcolor},
+  numbers=left,
+  numberstyle=\tiny\color{gray},
+  stepnumber=1,
+  numbersep=8pt,
+  frame=single,
+  rulecolor=\color{black!30},
+  showstringspaces=false,
+  tabsize=4,
+  breaklines=true,
+  captionpos=b
+}
+
+\graphicspath{{images/}}
+
+\newcommand{\img}[3][0.8]{%
+  \begin{figure}[H]
+    \centering
+    \IfFileExists{#2}{%
+      \includegraphics[width=#1\textwidth]{#2}%
+    }{%
+      \fbox{\parbox{0.85\textwidth}{\centering\textbf{Image missing:}
+      \texttt{#2}\\Place the file in the \texttt{images/} folder.}}%
+    }%
+    \caption{#3}
+  \end{figure}
+}
+
+\newcommand{\code}[1]{\texttt{\small #1}}
+
+\begin{document}
+
+% ===================== TITLE PAGE =====================
+\begin{titlepage}
+\begin{center}
+  \IfFileExists{utm_logo_1.jpg}{%
+    \includegraphics[width=0.23\textwidth]{utm_logo_1.jpg}\\[0.8em]
+  }{}
+
+  \textbf{MINISTRY OF EDUCATION AND RESEARCH}\\
+  \textbf{OF THE REPUBLIC OF MOLDOVA}\\[0.5em]
+  \textbf{TECHNICAL UNIVERSITY OF MOLDOVA}\\
+  \textbf{Faculty of Computers, Informatics and Microelectronics}\\
+  \textbf{Department of Software Engineering and Automatics}\\[2em]
+
+  \vspace{1.5cm}
+  \textbf{\Large Tacu Igor \textemdash{} FAF-242}\\[3em]
+
+  \textbf{\Large REPORT}\\[0.5em]
+  Laboratory Work No.\ 5\\[0.5em]
+  \textbf{Computer Architecture / Assembly Language}\\[0.5em]
+  \textbf{NASM --- Arithmetic Expressions and BCD Numbers}\\[3em]
+
+  \vfill
+  \begin{flushright}
+    Lecturer:\\
+    asist.\ univ.\ Olga Grosu\\
+    DISA, FCIM, UTM
+  \end{flushright}
+  \vfill
+
+  \large \textbf{Chi\c{s}in\u{a}u \textemdash{} 2025}
+\end{center}
+\end{titlepage}
+
+\tableofcontents
+\newpage
+
+% ===================== 1. INTRODUCTION =====================
+\section{Introduction}
+
+\subsection{Overview of Lab Topics}
+
+This laboratory work extends the Assembly programming skills developed in Lab 4
+by focusing on two new areas: \textbf{signed integer arithmetic expressions} in
+x86-64 Assembly, and \textbf{BCD (Binary Coded Decimal)} number representation
+and arithmetic.
+
+Signed arithmetic in Assembly requires understanding how two's complement
+representation works in hardware. The x86-64 ISA provides instructions such as
+\code{IMUL} (signed multiply), \code{IDIV} (signed divide), \code{NEG} (negate),
+and \code{CQO} (sign-extend RAX into RDX:RAX for division setup). Correct use
+of these requires careful attention to register state and overflow conditions.
+
+BCD encoding is an alternative to pure binary: each decimal digit (0--9) is
+individually encoded in four bits. Packed BCD fits two digits into one byte
+(one per nibble). While modern CPUs use binary arithmetic internally, BCD
+remains relevant in financial software, embedded controllers, and display
+drivers where preserving exact decimal representations is required.
+
+\subsection{Variant Selection (Student Number 25)}
+
+The lab specifies a rule to select three expression variants from the list of
+fifteen. Starting from student number 25:
+
+\begin{enumerate}
+  \item $25 > 15 \Rightarrow 25 / 2 = 12.5 \Rightarrow$ round to \textbf{13}
+  \item $13$ is odd $\Rightarrow 13 + 3 = 16 > 15 \Rightarrow 16 / 2 = $ \textbf{8}
+  \item $8$ is even $\Rightarrow 8 + 2 = $ \textbf{10}
+\end{enumerate}
+
+The three selected variants are \textbf{13}, \textbf{8}, and \textbf{10}.
+
+\newpage
+
+% ===================== 2. PURPOSE =====================
+\section{Purpose of the Report}
+
+This report documents the following lab tasks:
+
+\begin{enumerate}
+  \item Write an Assembly program computing $A = (A + B) - (C + D)$ using
+        registers, with full comments.
+  \item Write an Assembly program evaluating three arithmetic expressions
+        (variants 13, 8, 10), with register annotations and verification.
+  \item Perform manual BCD conversions and additions for the selected variants.
+  \item Describe the design of a BCD adder circuit in Logisim.
+  \item Write an Assembly program that adds two 8-bit packed BCD numbers and
+        stores the result (including carry) in subsequent memory locations.
+\end{enumerate}
+
+\newpage
+
+% ===================== 3. ASSEMBLY BASICS REVIEW =====================
+\section{Relevant Assembly Concepts}
+
+\subsection{Signed Arithmetic Instructions}
+
+\begin{table}[H]
+  \centering
+  \caption{Key x86-64 signed arithmetic instructions}
+  \renewcommand{\arraystretch}{1.3}
+  \begin{tabular}{|l|l|}
+    \hline
+    \textbf{Instruction} & \textbf{Effect} \\
+    \hline
+    \code{NEG rax}           & Two's complement negation: \code{rax = -rax} \\
+    \code{IMUL rax, rbx}     & Signed multiply: \code{rax = rax * rbx} \\
+    \code{CQO}               & Sign-extend RAX into RDX:RAX (required before IDIV) \\
+    \code{IDIV rbx}          & Signed divide: \code{rax = rdx:rax / rbx}, remainder in RDX \\
+    \code{ADD rax, rbx}      & \code{rax = rax + rbx} (same for signed and unsigned) \\
+    \code{SUB rax, rbx}      & \code{rax = rax - rbx} (same for signed and unsigned) \\
+    \hline
+  \end{tabular}
+\end{table}
+
+\noindent\textbf{Why CQO before IDIV?} The \code{IDIV} instruction divides the
+128-bit value \code{RDX:RAX} by the operand. If RDX is not properly
+sign-extended from RAX, the high bits contain garbage, causing a \emph{divide
+error} (\#DE) fault. \code{CQO} (Convert Quadword to Octword) propagates the
+sign bit of RAX into every bit of RDX, making the pair a valid signed 128-bit
+value.
+
+\subsection{BCD Number Representation}
+
+\textbf{Binary Coded Decimal (BCD)} encodes each decimal digit as a 4-bit
+binary group. The 8421 code is the standard variant:
+
+\begin{table}[H]
+  \centering
+  \caption{8421 BCD code for digits 0--9}
+  \renewcommand{\arraystretch}{1.2}
+  \begin{tabular}{|c|c|}
+    \hline
+    \textbf{Decimal digit} & \textbf{8421 BCD (4 bits)} \\
+    \hline
+    0 & 0000 \\
+    1 & 0001 \\
+    2 & 0010 \\
+    3 & 0011 \\
+    4 & 0100 \\
+    5 & 0101 \\
+    6 & 0110 \\
+    7 & 0111 \\
+    8 & 1000 \\
+    9 & 1001 \\
+    \hline
+    10--15 & \textit{invalid states} \\
+    \hline
+  \end{tabular}
+\end{table}
+
+\noindent\textbf{Packed BCD} stores two digits per byte using the high nibble
+for the tens digit and the low nibble for the units digit. For example,
+decimal $57 = \texttt{0x57}$ in packed BCD because
+$5 = \texttt{0101}_2$ and $7 = \texttt{0111}_2$.
+
+\subsection{BCD vs.\ Pure Binary: Bit Comparison}
+
+\begin{table}[H]
+  \centering
+  \caption{Bit-width comparison: binary vs.\ packed BCD for lab variants}
+  \renewcommand{\arraystretch}{1.3}
+  \begin{tabular}{|c|c|c|c|c|}
+    \hline
+    \textbf{Decimal} & \textbf{Binary} & \textbf{Bits (bin)} & \textbf{Packed BCD} & \textbf{Bits (BCD)} \\
+    \hline
+    8  & \texttt{1000}          & 4 & \texttt{0000\ 1000} & 8 \\
+    10 & \texttt{1010}          & 4 & \texttt{0001\ 0000} & 8 \\
+    13 & \texttt{1101}          & 4 & \texttt{0001\ 0011} & 8 \\
+    \hline
+  \end{tabular}
+\end{table}
+
+\noindent BCD uses exactly twice as many bits as binary for single-digit
+numbers and about 20\% more bits overall for large numbers.  The tradeoff is
+exact decimal representation with simpler conversion to display form.
+
+\subsection{BCD Addition Rules}
+
+\begin{enumerate}
+  \item Add the two BCD numbers using ordinary binary addition.
+  \item For each 4-bit group (nibble):
+    \begin{itemize}
+      \item If the nibble result is $\leq 9$ and no carry was generated out
+            of that nibble, it is a valid BCD digit --- no adjustment needed.
+      \item If the nibble result is $> 9$ (i.e., in the invalid range
+            \texttt{0xA}--\texttt{0xF}), \textbf{add 6} to skip the six
+            invalid states and wrap back into the valid BCD range; the +6
+            produces a carry into the next nibble.
+      \item If a carry \emph{was} generated out of the nibble (even if the
+            result was $\leq 9$), \textbf{add 6} as well.
+    \end{itemize}
+\end{enumerate}
+
+\newpage
+
+% ===================== 4. TASK 1 =====================
+\section{Task 1: Expression $A = (A+B)-(C+D)$}
+
+\subsection{Specification}
+
+Write an Assembly program that computes $A = (A + B) - (C + D)$ using
+registers.  Values used: $A = 10,\; B = 5,\; C = 3,\; D = 2$.
+
+Expected result:
+\[
+  A = (10 + 5) - (3 + 2) = 15 - 5 = 10
+\]
+
+\subsection{Register Allocation}
+
+\begin{table}[H]
+  \centering
+  \caption{Register assignments for Task 1}
+  \renewcommand{\arraystretch}{1.3}
+  \begin{tabular}{|l|l|}
+    \hline
+    \textbf{Register} & \textbf{Role} \\
+    \hline
+    \code{RAX} & Holds $A$; later holds $(A+B)$; final result \\
+    \code{RBX} & Holds $B$ \\
+    \code{RCX} & Holds $C$; later holds $(C+D)$ \\
+    \code{R8}  & Holds $D$ (RDX reserved for \code{IDIV} remainder) \\
+    \code{RSI} & String pointer for \code{sys\_write} \\
+    \code{RDX} & Byte count for \code{sys\_write} \\
+    \code{RDI} & File descriptor (\texttt{1} = stdout) \\
+    \hline
+  \end{tabular}
+\end{table}
+
+\subsection{Source Code}
+
+\begin{lstlisting}[caption={task1.asm --- compute A = (A + B) - (C + D)}]
+section .data
+    lbl     db  "A = (A + B) - (C + D)", 10
+    lbl_len equ $ - lbl
+    pfx     db  "Result A = "
+    pfx_len equ $ - pfx
+
+section .bss
+    dbuf    resb 24     ; scratch buffer for integer -> ASCII conversion
+
+section .text
+    global _start
+
+_start:
+    ; ---- print expression label ----
+    mov  rax, 0x2000004
+    mov  rdi, 1
+    lea  rsi, [rel lbl]
+    mov  rdx, lbl_len
+    syscall
+
+    ; ---- load operands ----
+    mov  rax, 10        ; A = 10
+    mov  rbx, 5         ; B = 5
+    mov  rcx, 3         ; C = 3
+    mov  r8,  2         ; D = 2
+
+    ; ---- compute (A + B) ----
+    add  rax, rbx       ; rax = 15
+
+    ; ---- compute (C + D) ----
+    add  rcx, r8        ; rcx = 5
+
+    ; ---- A = (A+B) - (C+D) ----
+    sub  rax, rcx       ; rax = 10
+
+    ; ---- print result ----
+    push rax
+    mov  rax, 0x2000004
+    mov  rdi, 1
+    lea  rsi, [rel pfx]
+    mov  rdx, pfx_len
+    syscall
+    pop  rax
+    call print_int
+
+    mov  rax, 0x2000001
+    xor  rdi, rdi
+    syscall
+\end{lstlisting}
+
+\noindent\textbf{Expected output:}
+\begin{verbatim}
+A = (A + B) - (C + D)
+Result A = 10
+\end{verbatim}
+
+\img[0.85]{img.jpg}{Task 1 --- terminal output}
+
+\newpage
+
+% ===================== 5. TASK 2 =====================
+\section{Task 2: Arithmetic Expression Variants 13, 8, 10}
+
+All three expressions are evaluated in a single file (\code{task2.asm}).
+The \code{IDIV} instruction performs signed division; \code{CQO} is called
+before each division to sign-extend RAX into RDX:RAX.
+
+% ----------------------------------------------------------
+\subsection{Variant 13: $z = \dfrac{-a + b}{c} + 2d \Bigm/ e$}
+
+\textbf{Values used:} $a=1,\; b=5,\; c=2,\; d=3,\; e=4$.
+
+\textbf{Step-by-step verification:}
+\begin{align*}
+  -a + b &= -1 + 5 = 4 \\
+  \frac{-a + b}{c} &= \frac{4}{2} = 2 \\
+  2d &= 2 \times 3 = 6 \\
+  2 + 6 &= 8 \\
+  z &= \frac{8}{e} = \frac{8}{4} = \boxed{2}
+\end{align*}
+
+\textbf{Register trace:}
+
+\begin{table}[H]
+  \centering
+  \caption{Register values during Variant 13 computation}
+  \renewcommand{\arraystretch}{1.3}
+  \begin{tabular}{|l|l|l|}
+    \hline
+    \textbf{Instruction sequence} & \textbf{RAX} & \textbf{Note} \\
+    \hline
+    \code{mov rax, -1; add rax, 5}  & 4    & $-a + b$ \\
+    \code{cqo; idiv c (=2)}          & 2    & $(-a+b)/c$ \\
+    \code{mov r8, 2; imul r8, 3}     & 2    & $2d$ in R8 \\
+    \code{add rax, r8}               & 8    & $(-a+b)/c + 2d$ \\
+    \code{cqo; idiv e (=4)}          & 2    & final $z$ \\
+    \hline
+  \end{tabular}
+\end{table}
+
+\begin{lstlisting}[caption={Variant 13 --- key assembly steps}]
+    ; step 1: rax = -a + b = -1 + 5 = 4
+    mov  rax, -1
+    add  rax, 5
+
+    ; step 2: rax = rax / c = 4 / 2 = 2
+    cqo                     ; sign-extend RAX -> RDX:RAX
+    mov  rbx, 2             ; c = 2
+    idiv rbx                ; rax = 2
+
+    ; step 3: r8 = 2 * d = 2 * 3 = 6
+    mov  r8, 2
+    imul r8, 3
+
+    ; step 4: rax = 2 + 6 = 8
+    add  rax, r8
+
+    ; step 5: z = 8 / e = 8 / 4 = 2
+    cqo
+    mov  rbx, 4             ; e = 4
+    idiv rbx                ; rax = 2
+\end{lstlisting}
+
+\newpage
+
+% ----------------------------------------------------------
+\subsection{Variant 8: $z = \dfrac{(-a+b+c+1)^3}{(a-bc+d)^2}$}
+
+\textbf{Values used:} $a=1,\; b=2,\; c=1,\; d=3$.
+
+\textbf{Step-by-step verification:}
+\begin{align*}
+  \text{numerator base} &= -a + b + c + 1 = -1 + 2 + 1 + 1 = 3 \\
+  \text{numerator} &= 3^3 = 27 \\
+  \text{denominator base} &= a - bc + d = 1 - 2 \cdot 1 + 3 = 2 \\
+  \text{denominator} &= 2^2 = 4 \\
+  z &= \frac{27}{4} = \boxed{6} \quad \text{(integer division, truncated)}
+\end{align*}
+
+\begin{lstlisting}[caption={Variant 8 --- key assembly steps}]
+    ; --- numerator: (-a+b+c+1)^3 ---
+    mov  rax, -1            ; -a  (a=1)
+    add  rax, 2             ; -a+b  (b=2) = 1
+    add  rax, 1             ; -a+b+c  (c=1) = 2
+    add  rax, 1             ; -a+b+c+1 = 3
+    mov  r8, rax            ; r8 = base = 3
+    imul rax, r8            ; rax = 3^2 = 9
+    imul rax, r8            ; rax = 3^3 = 27
+    mov  r9, rax            ; r9 = numerator = 27
+
+    ; --- denominator: (a-b*c+d)^2 ---
+    mov  rax, 2             ; b = 2
+    imul rax, 1             ; b*c  (c=1) = 2
+    mov  rbx, 1             ; a = 1
+    sub  rbx, rax           ; a - b*c = -1
+    add  rbx, 3             ; a - b*c + d (d=3) = 2
+    imul rbx, rbx           ; denom = 2^2 = 4
+
+    ; --- z = numerator / denominator = 27 / 4 = 6 ---
+    mov  rax, r9
+    cqo
+    idiv rbx                ; rax = 6
+\end{lstlisting}
+
+\newpage
+
+% ----------------------------------------------------------
+\subsection{Variant 10: $z = \dfrac{-a^2 + b^2}{a^2 - b^2 - 5}$}
+
+\textbf{Values used:} $a=3,\; b=1$.
+
+\textbf{Step-by-step verification:}
+\begin{align*}
+  a^2 &= 9, \quad b^2 = 1 \\
+  \text{numerator} &= -9 + 1 = -8 \\
+  \text{denominator} &= 9 - 1 - 5 = 3 \\
+  z &= \frac{-8}{3} = \boxed{-2} \quad \text{(truncated toward zero)}
+\end{align*}
+
+\begin{lstlisting}[caption={Variant 10 --- key assembly steps}]
+    ; compute a^2 and b^2
+    mov  rax, 3             ; a = 3
+    imul rax, rax           ; a^2 = 9
+    mov  r8, rax            ; r8 = a^2 = 9
+
+    mov  rax, 1             ; b = 1
+    imul rax, rax           ; b^2 = 1
+    mov  r9, rax            ; r9 = b^2 = 1
+
+    ; numerator: -a^2 + b^2 = b^2 - a^2 = 1 - 9 = -8
+    mov  rax, r9
+    sub  rax, r8            ; rax = -8
+    mov  r10, rax           ; r10 = numerator
+
+    ; denominator: a^2 - b^2 - 5 = 9 - 1 - 5 = 3
+    mov  rbx, r8            ; rbx = 9
+    sub  rbx, r9            ; rbx = 8
+    sub  rbx, 5             ; rbx = 3
+
+    ; z = -8 / 3 = -2
+    mov  rax, r10
+    cqo                     ; sign-extend for signed division
+    idiv rbx                ; rax = -2
+\end{lstlisting}
+
+\noindent\textbf{Combined terminal output of \code{task2}:}
+\begin{verbatim}
+--- Expr 13: z=((-a+b)/c + 2*d)/e ---
+a=1 b=5 c=2 d=3 e=4
+z = 2
+
+--- Expr 8: z=(-a+b+c+1)^3 / (a-b*c+d)^2 ---
+a=1 b=2 c=1 d=3
+z = 6
+
+--- Expr 10: z=(-a*a+b*b)/(a*a-b*b-5) ---
+a=3 b=1
+z = -2
+\end{verbatim}
+
+\img[0.85]{img2.jpg}{Task 2 --- all three expression variants}
+
+\newpage
+
+% ===================== 6. BCD TASK 3 =====================
+\section{Task 3: BCD Conversions and Manual Arithmetic}
+
+\subsection{Decimal to 8421 BCD Conversion}
+
+Student number 25 is odd, so the odd column from the lab table is used:
+(a) 10, (b) 13, (c) 18, (g) 44, (h) 57, (i) 69.
+Each decimal digit is replaced by its 4-bit BCD code; two digits pack into one byte.
+
+\begin{table}[H]
+  \centering
+  \caption{Decimal to packed 8421 BCD conversion --- odd column (student \#25)}
+  \renewcommand{\arraystretch}{1.3}
+  \begin{tabular}{|c|c|c|}
+    \hline
+    \textbf{Decimal} & \textbf{BCD (nibble notation)} & \textbf{Hex byte} \\
+    \hline
+    10 & \texttt{0001\ 0000} & \texttt{0x10} \\
+    13 & \texttt{0001\ 0011} & \texttt{0x13} \\
+    18 & \texttt{0001\ 1000} & \texttt{0x18} \\
+    44 & \texttt{0100\ 0100} & \texttt{0x44} \\
+    57 & \texttt{0101\ 0111} & \texttt{0x57} \\
+    69 & \texttt{0110\ 1001} & \texttt{0x69} \\
+    \hline
+  \end{tabular}
+\end{table}
+
+\subsection{Binary vs.\ BCD Bit Comparison}
+
+Converting the same numbers to straight binary and comparing required bits:
+
+\begin{table}[H]
+  \centering
+  \caption{Binary representation vs.\ packed BCD bit width --- odd column}
+  \renewcommand{\arraystretch}{1.3}
+  \begin{tabular}{|c|c|c|c|c|}
+    \hline
+    \textbf{Decimal} & \textbf{Binary} & \textbf{Binary bits} & \textbf{Packed BCD} & \textbf{BCD bits} \\
+    \hline
+    10 & \texttt{0000\ 1010} & 4 & \texttt{0001\ 0000} & 8 \\
+    13 & \texttt{0000\ 1101} & 4 & \texttt{0001\ 0011} & 8 \\
+    18 & \texttt{0001\ 0010} & 5 & \texttt{0001\ 1000} & 8 \\
+    44 & \texttt{0010\ 1100} & 6 & \texttt{0100\ 0100} & 8 \\
+    57 & \texttt{0011\ 1001} & 6 & \texttt{0101\ 0111} & 8 \\
+    69 & \texttt{0100\ 0101} & 7 & \texttt{0110\ 1001} & 8 \\
+    \hline
+  \end{tabular}
+\end{table}
+
+\noindent Packed BCD always uses exactly 8 bits for any two-digit number, while
+binary uses only as many bits as the value requires. The BCD overhead is
+justified when direct digit access matters more than storage efficiency.
+
+\subsection{BCD Additions}
+
+\subsubsection*{Example a) \quad $421 + 975$}
+
+\[
+\begin{array}{r}
+  421 \\
++ 975 \\
+\hline
+\end{array}
+\]
+
+BCD addition digit by digit (right to left):
+
+\begin{itemize}
+  \item \textbf{Units:} $1 + 5 = 6 \leq 9$ \quad valid BCD, no correction. Digit = \textbf{6}.
+  \item \textbf{Tens:} $2 + 7 = 9 \leq 9$ \quad valid BCD, no correction. Digit = \textbf{9}.
+  \item \textbf{Hundreds:} $4 + 9 = 13 > 9$ \quad add $6$:
+        $\texttt{1101} + \texttt{0110} = \texttt{10011}$, write digit \textbf{3}, carry \textbf{1}.
+  \item \textbf{Thousands:} $0 + 0 + 1\text{(carry)} = 1$ \quad digit = \textbf{1}.
+\end{itemize}
+
+Result: $\mathbf{1396}$ \quad BCD: \texttt{0001\ 0011\ 1001\ 0110}
+
+\subsubsection*{Example b) \quad $183 + 195$}
+
+\begin{itemize}
+  \item \textbf{Units:} $3 + 5 = 8 \leq 9$ \quad digit = \textbf{8}, carry = 0.
+  \item \textbf{Tens:} $8 + 9 = 17 > 9$ \quad add $6$: $17 + 6 = 23$, digit = \textbf{7}, carry = 1.
+        (In binary: $\texttt{10001} + \texttt{0110} = \texttt{10111}$,
+        lower nibble = \texttt{0111} = 7, carry = 1.)
+  \item \textbf{Hundreds:} $1 + 1 + 1\text{(carry)} = 3 \leq 9$ \quad digit = \textbf{3}, carry = 0.
+\end{itemize}
+
+Result: $\mathbf{378}$ \quad BCD: \texttt{0011\ 0111\ 1000}
+
+\subsection{BCD Subtractions (10's Complement Method)}
+
+BCD subtraction is performed by adding the 10's complement of the subtrahend.
+The 10's complement of an $n$-digit number $X$ is $10^n - X$.
+
+\subsubsection*{a) \quad $856 - 245 = 611$}
+
+10's complement of $245$: \quad $999 - 245 + 1 = 755$
+
+$856 + 755 = 1611$ \quad carry = 1 (end-around carry, indicates positive result)
+
+Discard the leading 1: result = $\mathbf{611}$
+
+\subsubsection*{b) \quad $567 - 239 = 328$}
+
+10's complement of $239$: \quad $999 - 239 + 1 = 761$
+
+$567 + 761 = 1328$ \quad carry = 1
+
+Discard leading 1: result = $\mathbf{328}$
+
+\subsubsection*{c) \quad $974 - 632 = 342$}
+
+10's complement of $632$: \quad $999 - 632 + 1 = 368$
+
+$974 + 368 = 1342$ \quad carry = 1
+
+Discard leading 1: result = $\mathbf{342}$
+
+\subsubsection*{d) \quad $453 - 983$ (negative result)}
+
+10's complement of $983$: \quad $999 - 983 + 1 = 17$
+
+$453 + 017 = 470$ \quad carry = 0 (no end-around carry, indicates negative result)
+
+When carry = 0, the result is negative. Its magnitude is the 10's complement
+of $470$: \quad $1000 - 470 = 530$
+
+Result = $\mathbf{-530}$
+
+\newpage
+
+% ===================== 7. TASK 4 =====================
+\section{Task 4: BCD Adder in Logisim}
+
+A single-digit BCD adder can be constructed in Logisim using:
+
+\begin{enumerate}
+  \item A standard 4-bit binary full-adder (two 4-bit inputs $A$, $B$ plus
+        carry-in $C_{in}$) producing a 5-bit sum $S[4:0]$.
+  \item A \textbf{correction detector}: the sum exceeds valid BCD range if
+        $S \geq 10$, equivalently:
+        \[ C_{out} = S_4 \;\vee\; (S_3 \cdot S_2) \;\vee\; (S_3 \cdot S_1) \]
+        where $S_4$ is the carry bit and $S_3$--$S_0$ are the four sum bits.
+        This logic is combinational and uses two AND gates plus one OR gate.
+  \item A second 4-bit adder that adds $0000$ or $0110$ (6) to the lower four
+        sum bits, controlled by the correction signal $C_{out}$.
+  \item The correction carry is the output carry of the second adder, forming
+        the final decimal carry-out.
+\end{enumerate}
+
+A two-digit (8-bit) packed BCD adder chains two such single-digit adders, with
+the carry-out of the units adder feeding the carry-in of the tens adder.
+
+\img[0.90]{circuit.jpg}{BCD single-digit adder circuit in Logisim}
+
+\newpage
+
+% ===================== 8. TASK 5 =====================
+\section{Task 5: BCD Addition Assembly Program}
+
+\subsection{Specification}
+
+Write an Assembly program that adds two 8-bit packed BCD numbers and stores
+the result (including any carry) in \emph{subsequent memory locations}.
+
+\begin{itemize}
+  \item \code{bcd\_out[0]} --- the packed BCD result byte (two decimal digits).
+  \item \code{bcd\_out[1]} --- the carry byte: \texttt{0} (no hundreds digit)
+        or \texttt{1} (hundreds digit present).
+\end{itemize}
+
+\subsection{Algorithm}
+
+Because the x86-64 mode removes the \code{DAA} (Decimal Adjust after Addition)
+instruction that was available in 32-bit mode, the BCD correction must be
+implemented manually:
+
+\begin{enumerate}
+  \item \textbf{Pre-check units digits.} Extract the low nibbles of both
+        operands and sum them. If the sum $> 9$, a units correction ($+6$)
+        will be needed.
+  \item \textbf{Binary addition.} Add the two bytes using 16-bit arithmetic
+        so intermediate values above \texttt{0xFF} are preserved in AX.
+  \item \textbf{Units (low nibble) correction.} If the pre-check flagged an
+        overflow, add 6 to AX to skip the six invalid BCD states.
+  \item \textbf{Tens (high nibble) correction.} If the adjusted sum exceeds
+        \texttt{0x9F} (i.e., the tens digit is beyond 9), add \texttt{0x60}
+        to correct it and set carry $= 1$.
+\end{enumerate}
+
+\subsection{Register Allocation}
+
+\begin{table}[H]
+  \centering
+  \caption{Register assignments for the BCD addition program}
+  \renewcommand{\arraystretch}{1.3}
+  \begin{tabular}{|l|l|}
+    \hline
+    \textbf{Register} & \textbf{Role} \\
+    \hline
+    \code{RAX / AX / AL} & Primary 16-bit accumulator; holds binary sum and BCD-corrected result \\
+    \code{RBX / BX / BL} & Holds the second BCD operand (zero-extended to 16 bits) \\
+    \code{RCX / CX}      & Pre-add sum of low nibbles; used to decide low correction \\
+    \code{RDX / DX}      & Scratch for nibble extraction (\code{AND}/\code{SHR}) \\
+    \code{R8 / R8B}      & Carry output: \texttt{0} = no carry, \texttt{1} = carry \\
+    \code{RSI}           & String pointer for \code{sys\_write} \\
+    \code{RDI}           & File descriptor (\texttt{1} = stdout) \\
+    \code{CL}            & Scratch in \code{print\_bcd\_byte} to preserve AL \\
+    \hline
+  \end{tabular}
+\end{table}
+
+\subsection{Source Code}
+
+\begin{lstlisting}[caption={bcd\_add.asm --- full BCD addition program (macOS x86-64)}]
+; bcd_add_fn: adds two 8-bit packed BCD numbers
+; Input : AL = first BCD byte, BL = second BCD byte
+; Output: AL = BCD result, R8B = carry (0 or 1)
+; Clobbers: AX, BX, CX, DX, R8
+
+bcd_add_fn:
+    movzx eax, al           ; zero-extend to 16-bit
+    movzx ebx, bl
+
+    ; Step 1: pre-check low nibbles for units overflow
+    mov cx, ax
+    and cx, 0x000F          ; units digit of A
+    mov dx, bx
+    and dx, 0x000F          ; units digit of B
+    add cx, dx              ; CX = units sum (0-18)
+
+    ; Step 2: binary addition
+    add ax, bx              ; AX = binary sum
+
+    ; Step 3: units correction if sum > 9
+    cmp cx, 9
+    jle .check_tens
+    add ax, 6               ; add 6 to skip invalid BCD states
+
+.check_tens:
+    ; Step 4: tens correction + carry
+    xor r8, r8              ; assume carry = 0
+    cmp ax, 0x009F
+    jle .done
+    add ax, 0x0060          ; correct tens digit
+    mov r8b, 1              ; carry out
+    sub ax, 0x0100          ; remove carry from AX
+
+.done:
+    ret                     ; AL = BCD result, R8B = carry
+\end{lstlisting}
+
+\subsection{Worked Example}
+
+\subsubsection*{BCD $13 + 08$ (variant pair for student \#25 --- odd=13, even=8)}
+
+\begin{itemize}
+  \item Pre-check: units digits $3 + 8 = 11 > 9$ \quad correction needed.
+  \item Binary add: $\texttt{0x13} + \texttt{0x08} = \texttt{0x1B}$.
+  \item Units correction: $\texttt{0x1B} + 6 = \texttt{0x21}$.
+  \item Tens correction: $\texttt{0x21} \leq \texttt{0x9F}$, no correction; carry $= 0$.
+  \item Result: \code{bcd\_out[0] = 0x21}, \code{bcd\_out[1] = 0}.
+  \item Decimal verification: $13 + 8 = 21$ \checkmark
+\end{itemize}
+
+\subsection{Terminal Output}
+
+\begin{verbatim}
+Decimal -> BCD conversions (odd column):
+10 -> 0x10
+13 -> 0x13
+18 -> 0x18
+44 -> 0x44
+57 -> 0x57
+69 -> 0x69
+
+BCD add (13 + 08): 21  carry=0
+\end{verbatim}
+
+\img[0.85]{img3.jpg}{Task 5 --- BCD addition program output}
+
+\newpage
+
+% ===================== 9. DEBUGGING =====================
+\section{Debugging with LLDB}
+
+The same LLDB workflow from Lab 4 applies. Key points specific to arithmetic
+and BCD programs:
+
+\begin{lstlisting}[language=bash,caption={Assembling with debug info and launching LLDB}]
+nasm -f macho64 -g -F dwarf bcd_add.asm -o bcd_add.o
+ld -macos_version_min 10.7 \
+   -syslibroot $(xcrun --sdk macosx --show-sdk-path) \
+   -lSystem -e _start bcd_add.o -o bcd_add
+
+lldb ./bcd_add
+(lldb) breakpoint set --name bcd_add_fn
+(lldb) run
+(lldb) register read rax rbx rcx rdx r8   ; inspect at each step
+(lldb) stepi
+\end{lstlisting}
+
+\noindent\textbf{Arithmetic debugging tips:}
+\begin{itemize}
+  \item After every \code{IDIV}, inspect both RAX (quotient) and RDX
+        (remainder). A forgotten \code{CQO} before \code{IDIV} typically
+        causes a ``floating point exception'' (divide error \#DE).
+  \item Watch the \textbf{overflow flag (OF)} after \code{IMUL}: if it is set,
+        the product did not fit in the destination register.
+  \item For BCD debugging, use \code{register read rax} after each step and
+        verify the nibbles manually against the expected BCD correction.
+  \item Use \code{memory read --count 2 bcd\_out} to inspect the two
+        subsequent memory locations where the BCD result and carry are stored.
+\end{itemize}
+
+\newpage
+
+% ===================== 10. CONCLUSION =====================
+\section{Conclusion}
+
+This laboratory work covered two complementary topics in Assembly programming:
+signed integer arithmetic and BCD number representation.
+
+\textbf{Task 1} demonstrated that even a simple formula like
+$A = (A + B) - (C + D)$ requires explicit register management, careful
+ordering of \code{ADD} and \code{SUB}, and preservation of intermediate values
+across syscalls (using \code{PUSH}/\code{POP}).
+
+\textbf{Task 2} (variants 13, 8, 10) exposed the complexity of multi-step
+signed expressions. The critical discipline was always calling \code{CQO}
+immediately before \code{IDIV} to avoid a divide-error fault. Integer
+truncation toward zero means the Assembly result for a negative quotient
+(variant 10, $z = -2$) matches the mathematical definition of truncated
+integer division.
+
+\textbf{Task 3} highlighted the structural difference between binary and BCD:
+the same decimal digit 13 needs only 4 bits in binary but 8 bits in packed
+BCD. BCD's advantage is that conversion to a decimal string requires only
+nibble extraction --- no repeated division by 10.
+
+\textbf{Task 5} was the most involved: emulating the missing \code{DAA}
+instruction in 64-bit mode required pre-checking the unit digits before
+the add, so that inter-nibble carries could be detected correctly. The
+result is stored in two consecutive bytes --- \code{bcd\_out[0]} for the
+BCD digit pair and \code{bcd\_out[1]} for the carry --- directly modelling
+how a hardware BCD adder propagates its carry-out to the next stage.
+
+The overall insight from this lab is that arithmetic is never ``free'' in
+Assembly: every operation must be chosen and sequenced by the programmer,
+data widths must match the operation, and platform constraints (like the
+removal of \code{DAA} in 64-bit mode) require workarounds that expose the
+exact semantics of the hardware.
+
+\end{document}

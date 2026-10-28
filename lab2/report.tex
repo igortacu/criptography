@@ -1,0 +1,228 @@
+\documentclass[12pt,a4paper]{article}
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage[english]{babel}
+\usepackage{amsmath,amssymb,geometry,setspace,lmodern}
+\usepackage{graphicx,float,caption,fancyhdr,listings,xcolor,booktabs,array}
+
+\geometry{top=2cm,bottom=2cm,left=2.5cm,right=2.5cm}
+\setstretch{1.3}
+\pagestyle{fancy}\fancyhf{}\rfoot{\thepage}
+\captionsetup[figure]{position=bottom,justification=centering}
+
+\definecolor{codegray}{rgb}{0.95,0.95,0.95}
+\definecolor{commentcolor}{rgb}{0.4,0.4,0.4}
+\definecolor{keywordcolor}{rgb}{0.1,0.1,0.6}
+\definecolor{stringcolor}{rgb}{0.2,0.5,0.2}
+\lstset{
+  language=Python, basicstyle=\ttfamily\scriptsize, backgroundcolor=\color{codegray},
+  commentstyle=\color{commentcolor}\itshape, keywordstyle=\color{keywordcolor}\bfseries,
+  stringstyle=\color{stringcolor}, frame=single, rulecolor=\color{black!30},
+  showstringspaces=false, breaklines=true, columns=fullflexible, keepspaces=true
+}
+\newcommand{\code}[1]{\texttt{\small #1}}
+\input{tables.tex}
+\input{key.tex}
+
+\begin{document}
+
+\begin{titlepage}
+\begin{center}
+  \textbf{MINISTERUL EDUCAȚIEI ȘI CERCETĂRII}\\
+  \textbf{AL REPUBLICII MOLDOVA}\\[0.5em]
+  \textbf{UNIVERSITATEA TEHNICĂ A MOLDOVEI}\\
+  \textbf{Facultatea Calculatoare, Informatică și Microelectronică}\\
+  \textbf{Departamentul Ingineria Software și Automatică}\\[2em]
+
+  \vspace{1.5cm}
+  \textbf{\Large Tacu Igor \textemdash{} FAF-242}\\[3em]
+
+  \textbf{\Large RAPORT}\\[0.5em]
+  Lucrare de laborator nr.\ 2\\[0.5em]
+  \textbf{Criptografie}\\[0.5em]
+  \textbf{Criptanaliza cifrurilor monoalfabetice}\\[0.5em]
+  Varianta 23\\[3em]
+
+  \vfill
+  \begin{flushright}
+    Lector:\\
+    Maia Zaica\\
+    DISA, FCIM, UTM
+  \end{flushright}
+  \vfill
+
+  \large \textbf{Chișinău \textemdash{} 2026}
+\end{center}
+\end{titlepage}
+
+\tableofcontents
+\newpage
+
+% ============================================================
+\section{Sarcina lucrării}
+
+Se interceptează un mesaj criptat cu un cifru monoalfabetic despre care se știe că
+textul clar este scris în limba engleză. Folosind analiza frecvenței literelor trebuie
+găsit mesajul original. Doar literele au fost criptate; spațiile, cifrele și
+semnele de punctuație au rămas necriptate. Fiecare student primește varianta
+corespunzătoare numărului său de ordine din lista grupei; numărul meu este 23, deci
+lucrez cu criptograma \textbf{V23}.
+
+% ============================================================
+\section{Teorie scurtă}
+
+Într-un cifru monoalfabetic fiecare literă a textului clar este înlocuită întotdeauna
+cu aceeași literă a textului criptat, adică cheia este o permutare a alfabetului. Pentru
+alfabetul englez de 26 de litere există $26! \approx 4{,}03\cdot10^{26}$ chei, deci o căutare
+exhaustivă nu este posibilă. Totuși, punctul slab este că \emph{frecvența de apariție a
+literelor se păstrează}: dacă un text este suficient de lung, cea mai frecventă literă din
+criptogramă corespunde, cu mare probabilitate, celei mai frecvente litere a limbii
+(în engleză E, apoi T, A, O, I, N, \dots, vezi tabelul 2.2 din îndrumar).
+
+Frecvențele singure nu ajung, deoarece un text concret nu respectă exact tabelul.
+De aceea se folosesc și alte „trăsături de personalitate” ale limbii:
+\begin{itemize}
+  \item digrafele frecvente: TH, HE, AN, IN, ER, ON, RE, ED, ND, HA, AT, EN;
+  \item trigrafele frecvente: THE, AND, THA, ENT, ION, TIO, FOR, NDE, HAS, NCE;
+  \item literele dublate (SS, EE, TT, OO, FF) și cuvintele dintr-o singură literă (A, I);
+  \item cuvinte frecvente care apar pe măsură ce se fac înlocuiri (de exemplu T\texttt{*}E $\to$ THE).
+\end{itemize}
+Procesul este iterativ și necesită decizii ale omului: se fixează cele mai sigure
+înlocuiri, se citește textul parțial decriptat și se corectează ipotezele.
+
+% ============================================================
+\section{Criptograma interceptată (varianta 23)}
+
+Criptograma conține \textbf{3073 de litere} (fișierul \code{lab2/cipher\_v23.txt}). Începutul ei:
+\begin{lstlisting}[language={}]
+Cixvoztg oxo pnzv jvgvwxhp rnil cni qxz, adw, avhtdpv qv rtp qtgofrxwq t htzvit, qv qvsuvo wqv
+hifuwnsnjxpwp rqn rviv snnlxgj cni Athng'phxuqvi pxjgtwdivp xg Pqtlvpuvtiv af ztlxgj uqnwnjituqxh
+vgstijvzvgwpnc wqv Vsxmtavwqtg uixgwxgj wqtw cxjdivo xg wqv rnil. Wqv Ovutiwzvgw
+\end{lstlisting}
+
+% ============================================================
+\section{Atacul prin analiza frecvențelor}
+
+\subsection{Frecvențele literelor din criptogramă}
+
+Pentru calculul frecvențelor am scris un mic program (\code{lab2/freq.py}):
+\begin{lstlisting}
+def letters(text):
+    return [c for c in text.upper() if c in ABC]
+
+def letter_freq(text):
+    return Counter(letters(text))
+\end{lstlisting}
+Funcția \code{letters} păstrează doar literele (ignoră spațiile, cifrele și punctuația),
+iar \code{letter\_freq} numără apariția fiecăreia. Rezultatul este în tabelul 1, ordonat
+alfabetic, și în tabelul 2, ordonat descrescător.
+
+\begin{table}[H]
+\centering\scriptsize\setlength{\tabcolsep}{2.3pt}
+\begin{tabular}{@{}l*{26}{c}@{}}
+\toprule
+Litera & \rowAlpha \\
+Frecvența & \rowCnt \\
+\bottomrule
+\end{tabular}
+\caption{Frecvența literelor în criptograma interceptată (număr de apariții).}
+\end{table}
+
+\begin{table}[H]
+\centering\scriptsize\setlength{\tabcolsep}{2.3pt}
+\begin{tabular}{@{}l*{26}{c}@{}}
+\toprule
+Litera & \rowRankL \\
+Frecvența & \rowRankN \\
+\bottomrule
+\end{tabular}
+\caption{Aceleași frecvențe, în ordine descrescătoare.}
+\end{table}
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=\textwidth]{images/freq_compare.png}
+\caption{Frecvența literelor în limba engleză (stânga) și în mesajul interceptat (dreapta).}
+\end{figure}
+
+Cele mai frecvente litere în engleză sunt, în ordine, \texttt{E T A O I N S H R D L C U M W F G Y P B V K J X Q Z},
+iar în criptogramă \texttt{V W T N G X I Q P O S J H C Z D F U A R L K M Y B E}. Cele două ordini sunt
+destul de apropiate la început (V--E, W--T, T--A, N--O, G--N, X--I), dar nu identice, deci
+trebuie verificat fiecare pas. Cele mai frecvente trigrame ale criptogramei sunt
+\texttt{WQV} (65 de apariții), \texttt{TGO} (20), \texttt{XGJ} (18), \texttt{QVI} (17), iar cele mai frecvente
+cuvinte \texttt{WQV} (41), \texttt{NC} (31), \texttt{XG} (16), \texttt{TGO} (15), \texttt{T} (14).
+
+\subsection{Substituțiile pas cu pas}
+
+Mai jos, literele deja descifrate sunt scrise cu litere mici, iar cele necunoscute cu
+litere mari (ca în exemplul din îndrumar). Pentru fiecare pas se afișează primele 5 rânduri
+ale mesajului.
+
+\input{stages.tex}
+
+\subsection{Mesajul descifrat}
+
+Rezultatul final este (fiecare literă a criptogramei a fost înlocuită; cratimele lungi
+sunt scrise „--”):
+
+\input{plaintext.tex}
+
+Mici greșeli de ortografie și spații lipsă (de exemplu „handywith”, „witb an einstead”)
+provin din criptograma dată, nu din atac: spațiile și punctuația rămân necriptate, iar
+pentru acele cuvinte nu există o altă citire a literelor.
+
+\subsection{Cheia reconstituită}
+
+Din substituțiile găsite se reconstituie alfabetul de criptare (tabelul 3). Cheia este o
+permutare completă a celor 26 de litere, ceea ce confirmă corectitudinea atacului.
+
+\begin{table}[H]
+\centering\scriptsize\setlength{\tabcolsep}{2.3pt}
+\begin{tabular}{@{}l*{26}{c}@{}}
+\toprule
+Alfabet clar & \keyPlain \\
+Alfabet criptat & \keyCipher \\
+\bottomrule
+\end{tabular}
+\caption{Alfabetul reconstituit al mesajului criptat (varianta 23).}
+\end{table}
+
+% ============================================================
+\section{Implementare}
+
+Programele sunt în Python 3, fără biblioteci externe (în afară de \code{matplotlib} pentru grafic):
+\code{freq.py} (frecvențe, digrame, trigrame, aplicarea cheii), \code{attack.py} (lista
+substituțiilor cu justificarea fiecăreia) și \code{make\_report\_data.py} (generează graficul
+și fragmentele din acest raport).
+\begin{lstlisting}
+def apply(text, mapping):
+    # litere cunoscute -> mici, necunoscute -> mari, restul neschimbat
+    return "".join(mapping.get(c.upper(), c.upper()) if c.isalpha() else c
+                   for c in text)
+\end{lstlisting}
+Funcția \code{apply} înlocuiește fiecare literă cu corespondentul din dicționarul
+\code{mapping} (literă criptată $\to$ literă clară) și lasă neschimbate caracterele care nu sunt litere.
+Atacul în sine este un lanț de ipoteze verificate vizual pe textul parțial decriptat; la final
+\code{make\_report\_data.py} verifică (\code{assert}) că cheia obținută este o permutare a alfabetului.
+
+% ============================================================
+\section{Concluzii}
+
+Cifrul monoalfabetic poate avea un spațiu al cheilor imens ($26!$), dar nu este sigur:
+pentru o criptogramă de numai 3073 de litere au fost suficiente frecvențele literelor,
+trigrama \texttt{THE}, cuvintele scurte frecvente (\texttt{AND, OF, IN, TO, WAS}) și recunoașterea
+unor cuvinte mai lungi (\texttt{CRYPTOLOGY, SHAKESPEARE, ELIZABETH}) pentru a recupera integral
+textul și cheia. Cele mai multe litere (E, T, A, O, N, I, S, H, R) au fost identificate din
+frecvențe și trigrame, iar literele rare (J, Q, X, Z, K, V, B) abia la sfârșit, din context,
+pentru că frecvența lor este prea mică pentru a fi statistic de încredere. Atacul nu poate fi
+făcut complet automat: sunt necesare cunoștințe despre limbă, iar pașii s-au verificat citind
+textul parțial descifrat. Concluzia este că un cifru bun trebuie să ascundă frecvențele
+(de exemplu prin substituție polialfabetică), nu doar să aibă multe chei.
+
+% ============================================================
+\section{Codul sursă}
+
+Codul complet (folderul \texttt{lab2}) este disponibil în depozitul GitHub:\\
+\texttt{https://github.com/igortacu/criptography}
+
+\end{document}
